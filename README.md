@@ -1,12 +1,9 @@
-markdown
+Kubernetes Clusters on AWS EKS Using Terraform
+In this project, we will demonstrate how to deploy a simple dockerized HTML page on an AWS Elastic Kubernetes Service (EKS) cluster using Terraform. We will walk through the steps of setting up the infrastructure, deploying the HTML application, and exposing it to the internet. The source code for this project is available in the following GitHub repository: GitHub Repository Link.
+Project Structure
+The project directory is organized as follows:
+graphql
 Copy code
-# Kubernetes Clusters on AWS EKS Using Terraform
-
-This project demonstrates how to deploy a simple Dockerized HTML page on an AWS Elastic Kubernetes Service (EKS) cluster using Terraform. We walk through setting up the infrastructure, deploying the HTML application, and exposing it to the internet.
-
-## Project Structure
-
-```bash
 terraform-eks/
 ├── main.tf         # Main Terraform configuration for AWS and EKS setup
 ├── kubernetes.tf   # Kubernetes resource configurations for the cluster
@@ -15,10 +12,10 @@ terraform-eks/
 ├── html/
 │   └── index.html  # Static HTML page to be served
 │   └── Dockerfile  # Dockerfile for building the HTML page container
-Steps to Deploy
-Step 1: Create variables.tf
-Define variables for AWS region, VPC, and subnets:
 
+
+Step 1: Create Variables.tf
+The variables.tf file defines variables that allow for customization, including the AWS region, VPC, and subnets.
 hcl
 Copy code
 variable "aws_region" {
@@ -40,9 +37,12 @@ variable "vpc_subnet_2" {
   description = "The second subnet"
   default     = "subnet-xxx"
 }
-Step 2: Create main.tf
-Set up the AWS provider and EKS cluster using the Terraform AWS EKS module:
 
+
+
+
+Step 2: Create Main.tf
+The main.tf file is the core of the Terraform configuration. It sets up the AWS provider and creates the EKS cluster using the Terraform AWS EKS module.
 hcl
 Copy code
 # AWS Provider Configuration
@@ -67,8 +67,11 @@ module "eks" {
     }
   }
 }
+
+
 Step 3: Create index.html and Dockerfile
-index.html:
+The index.html file contains a simple static HTML page, while the Dockerfile sets up a container image to serve this page using Nginx.
+Example index.html:
 html
 Copy code
 <!DOCTYPE html>
@@ -80,20 +83,21 @@ Copy code
     <h1>Hello from AWS EKS Cluster!</h1>
   </body>
 </html>
-Dockerfile:
+Example Dockerfile:
 Dockerfile
 Copy code
 FROM nginx:alpine
 COPY ./index.html /usr/share/nginx/html/index.html
-Build and push the container image to Docker Hub:
 
+Build and push the container image to Docker Hub or another container registry:
 bash
 Copy code
 docker build -t <dockerhub-username>/html-app:latest .
 docker push <dockerhub-username>/html-app:latest
-Step 4: Create kubernetes.tf
-Configure Kubernetes resources, such as the namespace, deployment, and service:
 
+
+Step 4: Create Kubernetes.tf
+This file configures Kubernetes resources such as a namespace, a deployment for the HTML app, and a LoadBalancer service to expose it.
 hcl
 Copy code
 # Kubernetes Provider Configuration
@@ -123,52 +127,87 @@ resource "kubernetes_deployment" "html_app" {
 
   spec {
     replicas = 2
+
     selector {
-      match_labels = { app = "html-app" }
+      match_labels = {
+        app = "html-app"
+      }
     }
 
     template {
-      metadata { labels = { app = "html-app" } }
+      metadata {
+        labels = {
+          app = "html-app"
+        }
+      }
+
       spec {
         container {
           image = "<dockerhub-username>/html-app:latest"
           name  = "html-app"
-          port  { container_port = 80 }
+
+          port {
+            container_port = 80
+          }
         }
       }
     }
   }
 }
 
-# Service to expose HTML App
+# Service for Exposing the HTML App
 resource "kubernetes_service" "html_app_service" {
-  metadata { name = "html-app-service"; namespace = kubernetes_namespace.app_namespace.metadata[0].name }
+  metadata {
+    name      = "html-app-service"
+    namespace = kubernetes_namespace.app_namespace.metadata[0].name
+  }
 
   spec {
-    selector = { app = "html-app" }
-    port { port = 80; target_port = 80 }
+    selector = {
+      app = "html-app"
+    }
+
+    port {
+      port        = 80
+      target_port = 80
+    }
+
     type = "LoadBalancer"
   }
 }
-Step 5: Run Terraform Commands
-Initialize Terraform:
 
+
+Step 5: Terraform Commands
+1. Initialize Terraform:
 bash
 Copy code
 terraform init
-Apply the configuration:
 
+
+2. Apply the configuration:
 bash
 Copy code
 terraform apply -auto-approve
-Step 6: Verification
-Configure kubectl to access the EKS cluster:
 
+Terraform will create the necessary resources and set up the EKS cluster.
+
+
+Step 6: Verification
+1. Install and Configure kubectl:
+To interact with the EKS cluster, install kubectl and configure it using the following command:
 bash
 Copy code
 aws eks --region <aws_region> update-kubeconfig --name <eks_cluster_name>
-Get the external IP of the LoadBalancer:
 
+
+
+2. Fetch the External IP of the LoadBalancer:
+Once the cluster is up and running, retrieve the external IP of the LoadBalancer to access the HTML page in your browser:
 bash
 Copy code
 kubectl get svc -n html-app
+
+The external IP will allow you to view your static HTML page deployed on the EKS cluster.
+
+Conclusion
+By following this guide, you have successfully set up an AWS EKS cluster using Terraform and deployed a simple HTML app using Kubernetes. You have learned how to create, configure, and deploy a Kubernetes cluster using Terraform, making infrastructure management more efficient and scalable.
